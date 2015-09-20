@@ -2602,6 +2602,11 @@ angular.module('ui.bootstrap.modal', [])
       var $modalStack = {
         NOW_CLOSING_EVENT: 'modal.stack.now-closing'
       };
+      
+      var bodyPad = 0;
+      var scrollBarWidth = 0;
+      var body = $document[0].body;
+      var fixedElements = angular.element(body.querySelector('.navbar-fixed-top, .navbar-fixed-bottom, .affix'));
 
       //Modal focus behavior
       var focusableElementList;
@@ -2627,7 +2632,28 @@ angular.module('ui.bootstrap.modal', [])
         }
       });
 
+      function checkScrollBar() {
+        if (body.clientWidth >= window.innerWidth ) { return; }
+        measureScrollBar();
+      }
+
+      function measureScrollBar() {
+        scrollBarWidth = window.innerWidth - body.clientWidth;
+        bodyPad = parseInt((angular.element(body).css('padding-right') || 0), 10);
+      }
+
+      function setScrollBar() {
+        angular.element(body).css('padding-right', bodyPad + scrollBarWidth + 'px');
+        fixedElements.css('padding-right', bodyPad + scrollBarWidth + 'px');
+      }
+
+      function resetScrollBar() {
+        angular.element(body).css('padding-right', bodyPad + 'px');
+        fixedElements.css('padding-right', bodyPad + 'px');
+      }
+
       function removeModalWindow(modalInstance, elementToReceiveFocus) {
+
         var body = $document.find('body').eq(0);
         var modalWindow = openedWindows.get(modalInstance).value;
 
@@ -2638,7 +2664,11 @@ angular.module('ui.bootstrap.modal', [])
           var modalBodyClass = modalWindow.openedClass || OPENED_MODAL_CLASS;
           openedClasses.remove(modalBodyClass, modalInstance);
           body.toggleClass(modalBodyClass, openedClasses.hasKey(modalBodyClass));
+          if (scrollBarWidth) {
+            resetScrollBar();
+          }
         });
+
         checkRemoveBackdrop();
 
         //move focus to specified element if available, or else to body
@@ -2771,7 +2801,10 @@ angular.module('ui.bootstrap.modal', [])
           body.append(backdropDomEl);
         }
 
+        checkScrollBar();
+
         var angularDomEl = angular.element('<div modal-window="modal-window"></div>');
+
         angularDomEl.attr({
           'template-url': modal.windowTemplateUrl,
           'window-class': modal.windowClass,
@@ -2788,6 +2821,10 @@ angular.module('ui.bootstrap.modal', [])
         openedWindows.top().value.modalOpener = modalOpener;
         body.append(modalDomEl);
         body.addClass(modalBodyClass);
+
+        if (scrollBarWidth && currBackdropIndex === 0) {
+          setScrollBar();
+        }
 
         $modalStack.clearFocusListCache();
       };
@@ -5834,3 +5871,4 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
     "");
 }]);
 !angular.$$csp() && angular.element(document).find('head').prepend('<style type="text/css">.ng-animate.item:not(.left):not(.right){-webkit-transition:0s ease-in-out left;transition:0s ease-in-out left}</style>');
+
